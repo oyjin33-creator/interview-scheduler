@@ -132,24 +132,34 @@ input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26
 <div class="screen on" id="screen-welcome">
   <div class="welcome">
     <div class="welcome-card">
-      <div class="welcome-title">면접 시간 조율</div>
-      <div class="welcome-sub">팀별로 가능한 시간을 모아 최적의 면접 시간을 찾아드려요</div>
-      <div class="tabs">
+      <div class="welcome-title" id="welcome-title">면접 시간 조율</div>
+      <div class="welcome-sub" id="welcome-sub">팀별로 가능한 시간을 모아 최적의 면접 시간을 찾아드려요</div>
+      <div class="tabs" id="welcome-tabs">
         <button class="tab on" onclick="switchTab('admin')">관리자</button>
         <button class="tab" onclick="switchTab('interviewer')">면접관</button>
       </div>
 
       <!-- Admin -->
       <div id="wp-admin">
-        <div class="fg">
-          <label>팀 선택 또는 생성</label>
-          <div id="admin-team-list" style="margin-bottom:10px"></div>
-          <div style="display:flex;gap:8px">
-            <input type="text" id="new-team-name" placeholder="새 팀 이름 입력" onkeydown="if(event.key==='Enter')createTeam()">
-            <button class="btn btn-ghost btn-sm" onclick="createTeam()">＋ 생성</button>
+        <div id="admin-pw-gate">
+          <div class="fg">
+            <label>관리자 비밀번호</label>
+            <input type="password" id="admin-pw-input" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')checkAdminPw()">
           </div>
+          <div id="admin-pw-error" style="display:none;font-size:13px;color:#c0392b;margin-bottom:12px">비밀번호가 틀렸습니다.</div>
+          <button class="btn btn-primary btn-block" onclick="checkAdminPw()">확인 →</button>
         </div>
-        <button class="btn btn-primary btn-block" onclick="enterAdmin()">관리자로 입장 →</button>
+        <div id="admin-main-gate" style="display:none">
+          <div class="fg">
+            <label>팀 선택 또는 생성</label>
+            <div id="admin-team-list" style="margin-bottom:10px"></div>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="new-team-name" placeholder="새 팀 이름 입력" onkeydown="if(event.key==='Enter')createTeam()">
+              <button class="btn btn-ghost btn-sm" onclick="createTeam()">＋ 생성</button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" onclick="enterAdmin()">관리자로 입장 →</button>
+        </div>
       </div>
 
       <!-- Interviewer -->
@@ -766,6 +776,25 @@ function prevWeekResult(){ state.resultWeekOffset--; renderResultCal(); }
 function nextWeekResult(){ state.resultWeekOffset++; renderResultCal(); }
 
 // ═══════════════════════════
+// ADMIN PASSWORD
+// ═══════════════════════════
+const ADMIN_PASSWORD = '1234'; // ← 여기서 비밀번호 변경하세요
+
+function checkAdminPw(){
+  const pw = document.getElementById('admin-pw-input').value;
+  const errEl = document.getElementById('admin-pw-error');
+  if(pw === ADMIN_PASSWORD){
+    document.getElementById('admin-pw-gate').style.display = 'none';
+    document.getElementById('admin-main-gate').style.display = 'block';
+    renderWelcomeTeams();
+    errEl.style.display = 'none';
+  } else {
+    errEl.style.display = 'block';
+    document.getElementById('admin-pw-input').value = '';
+  }
+}
+
+// ═══════════════════════════
 // URL HASH ROUTING
 // ═══════════════════════════
 async function handleHash(){
@@ -776,6 +805,13 @@ async function handleHash(){
   if(!teamId) return;
   const team = getTeam(teamId);
   if(!team) return;
+
+  // 링크로 접속 시: 관리자 탭 완전 숨김, 면접관 화면만 표시
+  document.getElementById('welcome-tabs').style.display = 'none';
+  document.getElementById('wp-admin').style.display = 'none';
+  document.getElementById('welcome-title').textContent = team.name + ' 면접 조율';
+  document.getElementById('welcome-sub').textContent = '이름을 입력하고 가능한 시간을 선택해 주세요.';
+
   switchTab('interviewer');
   const sel = document.getElementById('iv-team-select');
   sel.value = teamId;
@@ -783,7 +819,7 @@ async function handleHash(){
   document.getElementById('iv-team-fg').style.display = 'none';
   const notice = document.getElementById('iv-link-notice');
   notice.style.display = 'block';
-  notice.textContent = `📎 ${team.name} 링크로 접속했습니다. 이름을 입력하고 가능 시간을 선택해 주세요.`;
+  notice.textContent = `📎 ${team.name} 링크로 접속했습니다.`;
 }
 
 // ═══════════════════════════
