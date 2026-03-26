@@ -70,7 +70,7 @@ input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26
 .cal-col-head .dom.today{background:var(--accent);color:#fff}
 .cal-time-col{padding:0;background:var(--paper2);border-right:1px solid var(--line)}
 /* 1시간 단위 굵은 구분선 */
-.cal-time{height:64px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-size:11px;color:var(--ink3);font-family:'Roboto Mono',monospace;border-bottom:2px solid var(--paper3)}
+.cal-time{height:64px;display:flex;align-items:flex-start;justify-content:flex-end;padding:6px 10px 0 0;font-size:11px;color:var(--ink3);font-family:'Roboto Mono',monospace;border-bottom:2px solid var(--paper3)}
 .cal-time:last-child{border-bottom:none}
 .cal-col{border-right:1px solid var(--line)}
 .cal-col:last-child{border-right:none}
@@ -78,9 +78,12 @@ input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26
 .cal-slot:last-child{border-bottom:none}
 .cal-slot:hover{background:var(--accent-soft)}
 /* 후보 슬롯: 파란 배경 + 왼쪽 바 + "선택가능" 텍스트 */
-.cal-slot.candidate{background:#dce8ff;border-bottom:2px solid #c5d8ff}
-.cal-slot.candidate::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent);border-radius:0}
-.cal-slot.candidate::before{content:'클릭하여 선택';position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;color:var(--accent);opacity:.6;white-space:nowrap}
+.cal-slot.candidate{background:#ffe8e8;border-bottom:2px solid #ffcaca}
+.cal-slot.candidate::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:#e03131;border-radius:0}
+.cal-slot.candidate::before{content:'✓ 선택됨';position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;color:#e03131;opacity:.8;white-space:nowrap}
+.cal-slot.iv-candidate{background:#dce8ff;border-bottom:2px solid #c5d8ff}
+.cal-slot.iv-candidate::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent);border-radius:0}
+.cal-slot.iv-candidate::before{content:'클릭하여 선택';position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;color:var(--accent);opacity:.7;white-space:nowrap}
 .cal-slot.all-available{background:var(--yes-soft);border-bottom:2px solid #b8e8cf}
 .cal-slot.all-available::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--yes);border-radius:0}
 .cal-slot.partial{background:var(--warn-soft);border-bottom:2px solid #f5d8a0}
@@ -721,7 +724,7 @@ function renderIVCal(){
     const isSel = state.ivSelectedSlots.includes(key);
     let cls='cal-slot';
     if(isSel) cls+=' all-available';
-    else if(isCand) cls+=' candidate';
+    else if(isCand) cls+=' iv-candidate';
     const oc = isCand?`onclick="toggleIVSlot('${ds}','${h}')"` : '';
     return `<div class="${cls}" ${oc}></div>`;
   });
