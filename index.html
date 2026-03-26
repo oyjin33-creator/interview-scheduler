@@ -142,7 +142,7 @@ input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26
   <div class="welcome">
     <div class="welcome-card">
       <div class="welcome-title" id="welcome-title">면접 시간 조율</div>
-      <div class="welcome-sub" id="welcome-sub">팀별로 가능한 시간을 모아 최적의 면접 시간을 찾아드려요</div>
+      <div class="welcome-sub" id="welcome-sub">채용별로 가능한 시간을 모아 최적의 면접 시간을 찾아드려요</div>
       <div class="tabs" id="welcome-tabs">
         <button class="tab on" onclick="switchTab('admin')">관리자</button>
         <button class="tab" onclick="switchTab('interviewer')">면접관</button>
@@ -160,10 +160,10 @@ input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26
         </div>
         <div id="admin-main-gate" style="display:none">
           <div class="fg">
-            <label>팀 선택 또는 생성</label>
+            <label>채용 선택 또는 생성</label>
             <div id="admin-team-list" style="margin-bottom:10px"></div>
             <div style="display:flex;gap:8px">
-              <input type="text" id="new-team-name" placeholder="새 팀 이름 입력" onkeydown="if(event.key==='Enter')createTeam()">
+              <input type="text" id="new-team-name" placeholder="새 채용 이름 입력" onkeydown="if(event.key==='Enter')createTeam()">
               <button class="btn btn-ghost btn-sm" onclick="createTeam()">＋ 생성</button>
             </div>
           </div>
@@ -179,8 +179,8 @@ input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26
           <input type="text" id="iv-name" placeholder="예: 박개발">
         </div>
         <div class="fg" id="iv-team-fg">
-          <label>팀 선택</label>
-          <select id="iv-team-select"><option value="">팀을 선택하세요</option></select>
+          <label>채용 선택</label>
+          <select id="iv-team-select"><option value="">채용을 선택하세요</option></select>
         </div>
         <button class="btn btn-primary btn-block" onclick="enterInterviewer()">가능 시간 입력 →</button>
       </div>
@@ -369,10 +369,10 @@ function show(id){
 // DB — TEAMS
 // ═══════════════════════════
 async function loadTeams(){
-  loading(true, '팀 목록 불러오는 중...');
+  loading(true, '채용 목록 불러오는 중...');
   const { data, error } = await sb.from('teams').select('*').order('created_at');
   loading(false);
-  if(error){ toast('팀 로드 실패: '+error.message); return; }
+  if(error){ toast('채용 로드 실패: '+error.message); return; }
   state.teams = (data||[]).map(t=>({
     id: t.id,
     name: t.name,
@@ -385,8 +385,8 @@ async function loadTeams(){
 
 async function createTeam(){
   const name = document.getElementById('new-team-name').value.trim();
-  if(!name){ toast('팀 이름을 입력하세요.'); return; }
-  loading(true, '팀 생성 중...');
+  if(!name){ toast('채용 이름을 입력하세요.'); return; }
+  loading(true, '채용 생성 중...');
   const { data, error } = await sb.from('teams').insert({
     name,
     color: TEAM_COLORS[state.teams.length % TEAM_COLORS.length],
@@ -394,12 +394,12 @@ async function createTeam(){
     people: [],
   }).select().single();
   loading(false);
-  if(error){ toast('팀 생성 실패: '+error.message); return; }
+  if(error){ toast('채용 생성 실패: '+error.message); return; }
   state.teams.push({ id:data.id, name:data.name, color:data.color, candidateSlots:[], people:[] });
   document.getElementById('new-team-name').value = '';
   renderWelcomeTeams();
   selectWelcomeTeam(data.id);
-  toast(name+' 팀이 생성되었습니다!', 'green');
+  toast(name+' 채용이 생성되었습니다!', 'green');
 }
 
 async function saveTeamToDB(){
@@ -482,19 +482,19 @@ function renderWelcomeTeams(){
       <div><div class="team-name">${t.name}</div><div class="team-meta">면접관 ${t.people.length}명</div></div>
       <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
         <div style="color:var(--ink3);font-size:16px" id="wcheck-${t.id}"></div>
-        <button class="person-del" onclick="deleteTeam(event,'${t.id}','${t.name}')" title="팀 삭제" style="color:#c0392b;opacity:.6">🗑</button>
+        <button class="person-del" onclick="deleteTeam(event,'${t.id}','${t.name}')" title="채용 삭제" style="color:#c0392b;opacity:.6">🗑</button>
       </div>
-    </div>`).join('') : '<p style="font-size:13px;color:var(--ink3);margin-bottom:8px">아직 팀이 없습니다</p>';
+    </div>`).join('') : '<p style="font-size:13px;color:var(--ink3);margin-bottom:8px">아직 채용이 없습니다</p>';
 
   const sel = document.getElementById('iv-team-select');
-  sel.innerHTML = '<option value="">팀을 선택하세요</option>' +
+  sel.innerHTML = '<option value="">채용을 선택하세요</option>' +
     state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
 }
 
 async function deleteTeam(e, teamId, teamName){
-  e.stopPropagation(); // 팀 선택 클릭 방지
-  if(!confirm(`"${teamName}" 팀을 삭제할까요?\n면접관 목록과 모든 응답 데이터가 함께 삭제됩니다.`)) return;
-  loading(true, '팀 삭제 중...');
+  e.stopPropagation(); // 채용 선택 클릭 방지
+  if(!confirm(`"${teamName}" 채용을 삭제할까요?\n면접관 목록과 모든 응답 데이터가 함께 삭제됩니다.`)) return;
+  loading(true, '채용 삭제 중...');
   // availability는 cascade로 자동 삭제됨
   const { error } = await sb.from('teams').delete().eq('id', teamId);
   loading(false);
@@ -502,7 +502,7 @@ async function deleteTeam(e, teamId, teamName){
   state.teams = state.teams.filter(t=>t.id!==teamId);
   if(_selTeam === teamId) _selTeam = null;
   renderWelcomeTeams();
-  toast(`"${teamName}" 팀이 삭제되었습니다.`);
+  toast(`"${teamName}" 채용이 삭제되었습니다.`);
 }
 
 let _selTeam = null;
@@ -517,7 +517,7 @@ function selectWelcomeTeam(id){
 }
 
 function enterAdmin(){
-  if(!_selTeam){ toast('팀을 선택하세요.'); return; }
+  if(!_selTeam){ toast('채용을 선택하세요.'); return; }
   state.currentTeamId = _selTeam;
   state.calWeekOffset = 0;
   show('screen-admin');
@@ -530,7 +530,7 @@ async function enterInterviewer(){
   const name = document.getElementById('iv-name').value.trim();
   const teamId = document.getElementById('iv-team-select').value;
   if(!name){ toast('이름을 입력하세요.'); return; }
-  if(!teamId){ toast('팀을 선택하세요.'); return; }
+  if(!teamId){ toast('채용을 선택하세요.'); return; }
   state.currentPerson = name;
   state.currentTeamId = teamId;
   // 관리자가 선택한 첫 슬롯이 있는 주부터 보여주기
