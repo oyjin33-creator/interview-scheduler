@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>면접 시간 조율</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#111010;--ink2:#555250;--ink3:#999794;
+  --paper:#faf9f7;--paper2:#f2f0ec;--paper3:#e8e5df;--line:#dedad3;
+  --accent:#1a56f0;--accent-soft:#e8eeff;--accent-dark:#1040cc;
+  --yes:#1a9e5c;--yes-soft:#e6f7ee;
+  --warn:#d97706;--warn-soft:#fef3e2;
+  --r:8px;--r-lg:14px;
+}
+body{font-family:'Pretendard',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.5}
+.screen{display:none;min-height:100vh;animation:fadeIn .22s ease}
+.screen.on{display:flex;flex-direction:column}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.topbar{position:sticky;top:0;z-index:100;background:var(--paper);border-bottom:1px solid var(--line);padding:0 32px;height:56px;display:flex;align-items:center;gap:16px}
+.topbar-logo{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.topbar-logo span{color:var(--accent)}
+.topbar-sep{width:1px;height:18px;background:var(--line)}
+.topbar-team{font-size:13px;color:var(--ink2)}
+.topbar-mode{margin-left:auto;display:flex;background:var(--paper2);border:1px solid var(--line);border-radius:6px;padding:3px;gap:2px}
+.mode-btn{padding:5px 14px;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--ink3);font-family:inherit;transition:all .15s}
+.mode-btn.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.body{flex:1;padding:32px;max-width:1100px;width:100%;margin:0 auto}
+.welcome{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px}
+.welcome-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:40px;width:100%;max-width:440px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.welcome-title{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px}
+.welcome-sub{font-size:14px;color:var(--ink2);margin-bottom:32px}
+.tabs{display:flex;margin-bottom:24px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.tab{flex:1;padding:10px;text-align:center;font-size:14px;font-weight:500;cursor:pointer;border:none;background:var(--paper2);color:var(--ink2);font-family:inherit;transition:all .15s}
+.tab.on{background:var(--paper);color:var(--accent);font-weight:600}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px;letter-spacing:.3px;text-transform:uppercase}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);font-size:14px;font-family:inherit;background:var(--paper);color:var(--ink);outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,86,240,.1)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:var(--r);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-dark)}
+.btn-primary:disabled{opacity:.5;cursor:default}
+.btn-block{width:100%;justify-content:center}
+.btn-sm{padding:6px 14px;font-size:13px;border-radius:6px}
+.btn-ghost{background:none;border:1px solid var(--line);color:var(--ink2)}
+.btn-ghost:hover{background:var(--paper2);color:var(--ink)}
+.btn-yes{background:var(--yes-soft);color:var(--yes);border:1px solid rgba(26,158,92,.2)}
+.btn-yes:hover{background:#d0f0e2}
+.div{height:1px;background:var(--line);margin:24px 0}
+.stitle{font-size:13px;font-weight:700;color:var(--ink2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:14px}
+.team-row{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);cursor:pointer;transition:all .15s;margin-bottom:6px}
+.team-row:hover{border-color:var(--accent);background:var(--accent-soft)}
+.team-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.team-name{font-weight:600;font-size:15px}
+.team-meta{font-size:12px;color:var(--ink3);margin-top:1px}
+.cal-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.cal-nav{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--paper2)}
+.cal-nav-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.cal-nav-btn{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink2);font-size:16px;transition:all .15s}
+.cal-nav-btn:hover{background:var(--paper3);color:var(--ink)}
+.cal-grid{display:grid;grid-template-columns:56px repeat(7,1fr);border-top:1px solid var(--line)}
+.cal-col-head{padding:10px 4px;text-align:center;font-size:12px;font-weight:600;color:var(--ink2);border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--paper2);display:flex;flex-direction:column;align-items:center;gap:3px}
+.cal-col-head:last-child{border-right:none}
+.cal-col-head .dow{text-transform:uppercase;letter-spacing:.5px}
+.cal-col-head .dom{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--ink)}
+.cal-col-head .dom.today{background:var(--accent);color:#fff}
+.cal-time-col{padding:0;background:var(--paper2);border-right:1px solid var(--line)}
+.cal-time{height:52px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-size:11px;color:var(--ink3);font-family:'Roboto Mono',monospace;border-bottom:1px solid var(--line)}
+.cal-time:last-child{border-bottom:none}
+.cal-col{border-right:1px solid var(--line)}
+.cal-col:last-child{border-right:none}
+.cal-slot{height:52px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .1s;position:relative}
+.cal-slot:last-child{border-bottom:none}
+.cal-slot:hover{background:var(--accent-soft)}
+.cal-slot.candidate{background:var(--accent-soft)}
+.cal-slot.candidate::after{content:'';position:absolute;left:3px;top:3px;bottom:3px;width:3px;background:var(--accent);border-radius:2px}
+.cal-slot.all-available{background:var(--yes-soft)}
+.cal-slot.all-available::after{content:'';position:absolute;left:3px;top:3px;bottom:3px;width:3px;background:var(--yes);border-radius:2px}
+.cal-slot.partial{background:var(--warn-soft)}
+.cal-slot.partial::after{content:'';position:absolute;left:3px;top:3px;bottom:3px;width:3px;background:var(--warn);border-radius:2px}
+.slot-names{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:2px 6px 2px 10px;gap:1px;overflow:hidden}
+.slot-name-chip{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.slot-name-chip.yes{color:var(--yes)}
+.slot-name-chip.warn{color:var(--warn)}
+.cal-slot-wrap{position:relative}
+.slot-tooltip{display:none;position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);background:var(--ink);color:#fff;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6;white-space:nowrap;z-index:200;pointer-events:none}
+.cal-slot-wrap:hover .slot-tooltip{display:block}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.pill-green{background:var(--yes-soft);color:var(--yes)}
+.pill-warn{background:var(--warn-soft);color:var(--warn)}
+.pill-gray{background:var(--paper2);color:var(--ink2)}
+.result-card{background:var(--paper);border:1.5px solid var(--yes);border-radius:var(--r-lg);padding:20px 24px;margin-bottom:12px}
+.result-time{font-size:20px;font-weight:700;font-family:'Roboto Mono',monospace;color:var(--ink)}
+.result-day{font-size:13px;color:var(--ink2);margin-top:2px}
+.result-who{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.person-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--r);border:1px solid var(--line);background:var(--paper);margin-bottom:8px}
+.avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.person-name{font-weight:500;font-size:14px}
+.person-status{font-size:12px;margin-left:auto}
+.person-del{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:none;color:var(--ink3);font-size:14px;transition:all .12s}
+.person-del:hover{background:var(--paper3);color:#c0392b}
+.c0{background:#e8eeff;color:#1a56f0}.c1{background:#e6f7ee;color:#1a9e5c}.c2{background:#fef3e2;color:#d97706}.c3{background:#fdecea;color:#c0392b}.c4{background:#f3f0fe;color:#6c4fd4}.c5{background:#fce8f3;color:#c026a0}.c6{background:#e6f5fb;color:#0891b2}.c7{background:#fdf6e3;color:#92700a}
+@media(max-width:700px){.topbar{padding:0 16px}.body{padding:16px}.cal-col-head .dow{display:none}}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:9999;transform:translateY(60px);opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.green{background:var(--yes)}
+.empty{text-align:center;padding:40px 20px;color:var(--ink3)}
+.empty-icon{font-size:32px;margin-bottom:10px}
+.two-col{display:grid;grid-template-columns:300px 1fr;gap:24px;align-items:start}
+@media(max-width:800px){.two-col{grid-template-columns:1fr}}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.leg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2)}
+.leg-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.loading-overlay{position:fixed;inset:0;background:rgba(250,249,247,.85);display:flex;align-items:center;justify-content:center;z-index:500;flex-direction:column;gap:12px;font-size:14px;color:var(--ink2)}
+.spinner{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading" style="display:none">
+  <div class="spinner"></div>
+  <span id="loading-msg">불러오는 중...</span>
+</div>
+
+<!-- ── WELCOME ── -->
+<div class="screen on" id="screen-welcome">
+  <div class="welcome">
+    <div class="welcome-card">
+      <div class="welcome-title">면접 시간 조율</div>
+      <div class="welcome-sub">팀별로 가능한 시간을 모아 최적의 면접 시간을 찾아드려요</div>
+      <div class="tabs">
+        <button class="tab on" onclick="switchTab('admin')">관리자</button>
+        <button class="tab" onclick="switchTab('interviewer')">면접관</button>
+      </div>
+
+      <!-- Admin -->
+      <div id="wp-admin">
+        <div class="fg">
+          <label>팀 선택 또는 생성</label>
+          <div id="admin-team-list" style="margin-bottom:10px"></div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="new-team-name" placeholder="새 팀 이름 입력" onkeydown="if(event.key==='Enter')createTeam()">
+            <button class="btn btn-ghost btn-sm" onclick="createTeam()">＋ 생성</button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="enterAdmin()">관리자로 입장 →</button>
+      </div>
+
+      <!-- Interviewer -->
+      <div id="wp-interviewer" style="display:none">
+        <div id="iv-link-notice" style="display:none;background:var(--accent-soft);border:1px solid rgba(26,86,240,.3);border-radius:var(--r);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--accent-dark)"></div>
+        <div class="fg">
+          <label>본인 이름</label>
+          <input type="text" id="iv-name" placeholder="예: 박개발">
+        </div>
+        <div class="fg" id="iv-team-fg">
+          <label>팀 선택</label>
+          <select id="iv-team-select"><option value="">팀을 선택하세요</option></select>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="enterInterviewer()">가능 시간 입력 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADMIN ── -->
+<div class="screen" id="screen-admin">
+  <div class="topbar">
+    <div class="topbar-logo">면접<span>조율</span></div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-team" id="admin-topbar-team"></div>
+    <div class="topbar-mode">
+      <button class="mode-btn on" onclick="adminTab('setup')" id="atab-setup">설정</button>
+      <button class="mode-btn" onclick="adminTab('result')" id="atab-result">결과 분석</button>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="goHome()" style="margin-left:8px">나가기</button>
+  </div>
+  <div class="body">
+    <!-- Setup -->
+    <div id="admin-setup">
+      <div class="two-col">
+        <div>
+          <div class="stitle">면접관 목록</div>
+          <div id="admin-people-list"></div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <input type="text" id="add-person-input" placeholder="면접관 이름 추가" onkeydown="if(event.key==='Enter')addPerson()">
+            <button class="btn btn-primary btn-sm" onclick="addPerson()">추가</button>
+          </div>
+          <div class="div"></div>
+          <div class="stitle">후보 날짜/시간 선택</div>
+          <p style="font-size:13px;color:var(--ink2);margin-bottom:16px">캘린더에서 면접 후보 시간을 클릭해 선택하세요. 면접관들에게 이 슬롯이 공유됩니다.</p>
+          <div style="margin-bottom:12px;font-size:13px;color:var(--ink2)">
+            선택된 슬롯: <strong id="selected-slot-count">0</strong>개
+            <button class="btn btn-ghost btn-sm" onclick="clearAllSlots()" style="margin-left:8px">전체 초기화</button>
+          </div>
+          <div class="div"></div>
+          <div class="stitle">면접관 공유 링크</div>
+          <p style="font-size:13px;color:var(--ink2);margin-bottom:12px">이 링크를 면접관들에게 공유하세요. 이름만 입력하면 바로 가능 시간을 선택할 수 있어요.</p>
+          <div id="share-link-box"></div>
+        </div>
+        <div>
+          <div class="legend">
+            <div class="leg"><div class="leg-dot" style="background:var(--accent-soft);border-left:3px solid var(--accent)"></div>후보 선택됨</div>
+            <div class="leg"><div class="leg-dot" style="background:var(--paper2)"></div>미선택</div>
+          </div>
+        </div>
+      </div>
+      <div id="admin-cal"></div>
+    </div>
+    <!-- Result -->
+    <div id="admin-result" style="display:none">
+      <div class="two-col">
+        <div>
+          <div class="stitle">응답 현황</div>
+          <div id="result-people-list"></div>
+          <div class="div"></div>
+          <div class="stitle">교집합 추출</div>
+          <p style="font-size:13px;color:var(--ink2);margin-bottom:14px">최소 몇 명이 가능한 시간을 보여드릴까요?</p>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <label style="font-size:13px;color:var(--ink2)">최소 인원</label>
+            <input type="number" id="min-count" value="2" min="1" style="width:70px" onchange="renderResultCal()">
+            <span style="font-size:13px;color:var(--ink2)">명 이상</span>
+          </div>
+          <div class="legend">
+            <div class="leg"><div class="leg-dot" style="background:var(--yes-soft);border-left:3px solid var(--yes)"></div>전원 가능</div>
+            <div class="leg"><div class="leg-dot" style="background:var(--warn-soft);border-left:3px solid var(--warn)"></div>일부 가능</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadResultData()" style="margin-top:8px">🔄 새로고침</button>
+        </div>
+        <div>
+          <div class="stitle">추천 시간</div>
+          <div id="intersection-results"></div>
+        </div>
+      </div>
+      <div style="margin-top:20px" id="result-cal"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── INTERVIEWER ── -->
+<div class="screen" id="screen-interviewer">
+  <div class="topbar">
+    <div class="topbar-logo">면접<span>조율</span></div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-team" id="iv-topbar-info"></div>
+    <button class="btn btn-yes btn-sm" onclick="saveAvailability()" style="margin-left:auto" id="submit-btn">제출하기 ✓</button>
+    <button class="btn btn-ghost btn-sm" onclick="goHome()">나가기</button>
+  </div>
+  <div class="body">
+    <div style="margin-bottom:20px">
+      <div class="stitle">가능한 시간 선택</div>
+      <p style="font-size:14px;color:var(--ink2)">파란색으로 표시된 후보 시간 중 참여 가능한 슬롯을 클릭해 선택해 주세요. 중복 선택 가능합니다.</p>
+    </div>
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:var(--accent-soft);border-left:3px solid var(--accent)"></div>후보 시간 (클릭으로 선택)</div>
+      <div class="leg"><div class="leg-dot" style="background:var(--yes-soft);border-left:3px solid var(--yes)"></div>내가 선택함</div>
+    </div>
+    <div id="iv-cal"></div>
+    <div style="margin-top:16px;font-size:13px;color:var(--ink2)">선택: <strong id="iv-selected-count">0</strong>개 슬롯</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════
+// SUPABASE
+// ═══════════════════════════
+const SUPABASE_URL = 'https://fecsaigournzgfqxihwi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlY3NhaWdvdXJuemdmcXhpaHdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0OTE1ODYsImV4cCI6MjA5MDA2NzU4Nn0.ms2_P9mn773ozEpBB2Itc6KPhsHyd_0ar3y7xJ6PWVE';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ═══════════════════════════
+// CONSTANTS
+// ═══════════════════════════
+const HOURS = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+const DOW_KR = ['일','월','화','수','목','금','토'];
+const TEAM_COLORS = ['#1a56f0','#6c4fd4','#1a9e5c','#c026a0','#d97706','#0891b2'];
+
+// ═══════════════════════════
+// STATE (runtime only)
+// ═══════════════════════════
+let state = {
+  teams: [],           // loaded from DB
+  currentTeamId: null,
+  currentPerson: '',
+  calWeekOffset: 0,
+  ivSelectedSlots: [], // ['2025-01-20_10:00', ...]
+  // result view cache
+  resultAvailability: {}, // { 'date_time': [names] }
+  resultWeekOffset: 0,
+};
+
+// ═══════════════════════════
+// HELPERS
+// ═══════════════════════════
+function getTeam(id){ return state.teams.find(t=>t.id===id); }
+function currentTeam(){ return getTeam(state.currentTeamId); }
+function weekDates(offset){
+  const today = new Date();
+  const dow = today.getDay();
+  const mon = new Date(today);
+  mon.setDate(today.getDate() - (dow===0?6:dow-1) + offset*7);
+  return Array.from({length:7},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d; });
+}
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+function fmtDisplay(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  return `${d.getMonth()+1}월 ${d.getDate()}일 (${DOW_KR[d.getDay()]})`;
+}
+function colorClass(idx){ return 'c'+(idx%8); }
+function initials(name){ return name?name.slice(0,2):'?'; }
+function loading(show, msg='처리 중...'){
+  const el = document.getElementById('loading');
+  el.style.display = show?'flex':'none';
+  document.getElementById('loading-msg').textContent = msg;
+}
+function toast(msg, type=''){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show'+(type?' '+type:'');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+
+// ═══════════════════════════
+// DB — TEAMS
+// ═══════════════════════════
+async function loadTeams(){
+  loading(true, '팀 목록 불러오는 중...');
+  const { data, error } = await sb.from('teams').select('*').order('created_at');
+  loading(false);
+  if(error){ toast('팀 로드 실패: '+error.message); return; }
+  state.teams = (data||[]).map(t=>({
+    id: t.id,
+    name: t.name,
+    color: t.color,
+    candidateSlots: t.candidate_slots||[],
+    people: t.people||[],
+  }));
+  renderWelcomeTeams();
+}
+
+async function createTeam(){
+  const name = document.getElementById('new-team-name').value.trim();
+  if(!name){ toast('팀 이름을 입력하세요.'); return; }
+  loading(true, '팀 생성 중...');
+  const { data, error } = await sb.from('teams').insert({
+    name,
+    color: TEAM_COLORS[state.teams.length % TEAM_COLORS.length],
+    candidate_slots: [],
+    people: [],
+  }).select().single();
+  loading(false);
+  if(error){ toast('팀 생성 실패: '+error.message); return; }
+  state.teams.push({ id:data.id, name:data.name, color:data.color, candidateSlots:[], people:[] });
+  document.getElementById('new-team-name').value = '';
+  renderWelcomeTeams();
+  selectWelcomeTeam(data.id);
+  toast(name+' 팀이 생성되었습니다!', 'green');
+}
+
+async function saveTeamToDB(){
+  const team = currentTeam();
+  const { error } = await sb.from('teams').update({
+    people: team.people,
+    candidate_slots: team.candidateSlots,
+  }).eq('id', team.id);
+  if(error) toast('저장 실패: '+error.message);
+}
+
+// ═══════════════════════════
+// DB — AVAILABILITY
+// ═══════════════════════════
+async function loadAvailabilityForTeam(teamId){
+  const { data, error } = await sb.from('availability')
+    .select('person_name, date, time')
+    .eq('team_id', teamId);
+  if(error){ toast('응답 로드 실패: '+error.message); return {}; }
+  // Build map: 'date_time' -> [names]
+  const map = {};
+  (data||[]).forEach(row=>{
+    const key = `${row.date}_${row.time}`;
+    if(!map[key]) map[key]=[];
+    if(!map[key].includes(row.person_name)) map[key].push(row.person_name);
+  });
+  return map;
+}
+
+async function loadMySlots(teamId, personName){
+  const { data, error } = await sb.from('availability')
+    .select('date, time')
+    .eq('team_id', teamId)
+    .eq('person_name', personName);
+  if(error){ toast('내 슬롯 로드 실패: '+error.message); return []; }
+  return (data||[]).map(r=>`${r.date}_${r.time}`);
+}
+
+async function saveAvailability(){
+  const teamId = state.currentTeamId;
+  const person = state.currentPerson;
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  loading(true, '제출 중...');
+
+  // Delete existing
+  await sb.from('availability').delete()
+    .eq('team_id', teamId).eq('person_name', person);
+
+  // Insert new
+  if(state.ivSelectedSlots.length > 0){
+    const rows = state.ivSelectedSlots.map(s=>{
+      const [date, time] = s.split('_');
+      return { team_id: teamId, person_name: person, date, time };
+    });
+    const { error } = await sb.from('availability').insert(rows);
+    if(error){ toast('제출 실패: '+error.message); loading(false); btn.disabled=false; return; }
+  }
+
+  loading(false);
+  btn.disabled = false;
+  toast('제출되었습니다! ✓', 'green');
+  setTimeout(()=>goHome(), 1200);
+}
+
+// ═══════════════════════════
+// WELCOME
+// ═══════════════════════════
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',(i===0&&tab==='admin')||(i===1&&tab==='interviewer')));
+  document.getElementById('wp-admin').style.display = tab==='admin'?'block':'none';
+  document.getElementById('wp-interviewer').style.display = tab==='interviewer'?'block':'none';
+}
+
+function renderWelcomeTeams(){
+  const list = document.getElementById('admin-team-list');
+  list.innerHTML = state.teams.length ? state.teams.map(t=>`
+    <div class="team-row" id="wt-${t.id}" onclick="selectWelcomeTeam('${t.id}')">
+      <div class="team-dot" style="background:${t.color}"></div>
+      <div><div class="team-name">${t.name}</div><div class="team-meta">면접관 ${t.people.length}명</div></div>
+      <div style="margin-left:auto;color:var(--ink3)" id="wcheck-${t.id}"></div>
+    </div>`).join('') : '<p style="font-size:13px;color:var(--ink3);margin-bottom:8px">아직 팀이 없습니다</p>';
+
+  const sel = document.getElementById('iv-team-select');
+  sel.innerHTML = '<option value="">팀을 선택하세요</option>' +
+    state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+}
+
+let _selTeam = null;
+function selectWelcomeTeam(id){
+  _selTeam = id;
+  document.querySelectorAll('[id^=wcheck-]').forEach(e=>e.textContent='');
+  document.querySelectorAll('[id^=wt-]').forEach(e=>e.style.borderColor='');
+  const c = document.getElementById('wcheck-'+id);
+  if(c) c.textContent='✓';
+  const r = document.getElementById('wt-'+id);
+  if(r) r.style.borderColor='var(--accent)';
+}
+
+function enterAdmin(){
+  if(!_selTeam){ toast('팀을 선택하세요.'); return; }
+  state.currentTeamId = _selTeam;
+  state.calWeekOffset = 0;
+  show('screen-admin');
+  document.getElementById('admin-topbar-team').textContent = currentTeam().name + ' 관리자';
+  adminTab('setup');
+  renderAdminSetup();
+}
+
+async function enterInterviewer(){
+  const name = document.getElementById('iv-name').value.trim();
+  const teamId = document.getElementById('iv-team-select').value;
+  if(!name){ toast('이름을 입력하세요.'); return; }
+  if(!teamId){ toast('팀을 선택하세요.'); return; }
+  state.currentPerson = name;
+  state.currentTeamId = teamId;
+  state.calWeekOffset = 0;
+  loading(true, '데이터 불러오는 중...');
+  state.ivSelectedSlots = await loadMySlots(teamId, name);
+  loading(false);
+  show('screen-interviewer');
+  const team = getTeam(teamId);
+  document.getElementById('iv-topbar-info').textContent = `${team.name} · ${name}`;
+  renderIVCal();
+}
+
+function goHome(){
+  show('screen-welcome');
+  renderWelcomeTeams();
+}
+
+// ═══════════════════════════
+// ADMIN — SETUP
+// ═══════════════════════════
+function adminTab(tab){
+  document.getElementById('admin-setup').style.display = tab==='setup'?'block':'none';
+  document.getElementById('admin-result').style.display = tab==='result'?'block':'none';
+  document.getElementById('atab-setup').classList.toggle('on', tab==='setup');
+  document.getElementById('atab-result').classList.toggle('on', tab==='result');
+  if(tab==='result') loadResultData();
+}
+
+function renderAdminSetup(){
+  renderAdminPeople();
+  renderAdminCal();
+  renderShareLink();
+}
+
+function renderAdminPeople(){
+  const team = currentTeam();
+  const list = document.getElementById('admin-people-list');
+  if(!team.people.length){
+    list.innerHTML = `<div class="empty"><div class="empty-icon">👥</div><p>아직 면접관이 없습니다</p></div>`;
+    return;
+  }
+  list.innerHTML = team.people.map((p,i)=>`
+    <div class="person-row">
+      <div class="avatar ${colorClass(i)}">${initials(p)}</div>
+      <div class="person-name">${p}</div>
+      <button class="person-del" onclick="removePerson('${p}')">✕</button>
+    </div>`).join('');
+}
+
+async function addPerson(){
+  const inp = document.getElementById('add-person-input');
+  const name = inp.value.trim();
+  if(!name){ toast('이름을 입력하세요.'); return; }
+  const team = currentTeam();
+  if(team.people.includes(name)){ toast('이미 등록된 면접관입니다.'); return; }
+  team.people.push(name);
+  inp.value = '';
+  await saveTeamToDB();
+  renderAdminPeople();
+  toast(name+' 추가됨', 'green');
+}
+
+async function removePerson(name){
+  const team = currentTeam();
+  team.people = team.people.filter(p=>p!==name);
+  await saveTeamToDB();
+  await sb.from('availability').delete().eq('team_id', team.id).eq('person_name', name);
+  renderAdminPeople();
+  toast(name+' 삭제됨');
+}
+
+async function clearAllSlots(){
+  const team = currentTeam();
+  team.candidateSlots = [];
+  await saveTeamToDB();
+  document.getElementById('selected-slot-count').textContent = '0';
+  renderAdminCal();
+}
+
+async function toggleAdminSlot(dateStr, time){
+  const team = currentTeam();
+  const key = `${dateStr}_${time}`;
+  const idx = team.candidateSlots.indexOf(key);
+  if(idx===-1) team.candidateSlots.push(key);
+  else team.candidateSlots.splice(idx,1);
+  await saveTeamToDB();
+  document.getElementById('selected-slot-count').textContent = team.candidateSlots.length;
+  renderAdminCal();
+}
+
+function renderShareLink(){
+  const team = currentTeam();
+  const url = `${location.origin}${location.pathname}#iv?team=${team.id}`;
+  document.getElementById('share-link-box').innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="text" value="${url}" readonly
+        style="font-size:12px;font-family:'Roboto Mono',monospace;background:var(--paper2);color:var(--ink2);flex:1"
+        id="share-link-input">
+      <button class="btn btn-primary btn-sm" onclick="copyLink()">복사</button>
+    </div>
+    <p style="font-size:12px;color:var(--ink3);margin-top:6px">💡 Vercel 배포 후 이 링크를 그대로 면접관들에게 공유하세요.</p>`;
+}
+
+function copyLink(){
+  const inp = document.getElementById('share-link-input');
+  inp.select(); document.execCommand('copy');
+  toast('링크 복사됨!', 'green');
+}
+
+// ═══════════════════════════
+// CALENDAR (shared builder)
+// ═══════════════════════════
+function buildCalHeader(dates, navPrev, navNext){
+  const s=dates[0], e=dates[6];
+  return `<div class="cal-nav">
+    <button class="cal-nav-btn" onclick="${navPrev}()">‹</button>
+    <div class="cal-nav-title">${s.getMonth()+1}월 ${s.getDate()}일 – ${e.getMonth()+1}월 ${e.getDate()}일</div>
+    <button class="cal-nav-btn" onclick="${navNext}()">›</button>
+  </div>`;
+}
+
+function renderAdminCal(){
+  const team = currentTeam();
+  const dates = weekDates(state.calWeekOffset);
+  const today = fmtDate(new Date());
+  const DOW = ['월','화','수','목','금','토','일'];
+  let html = `<div class="cal-wrap">${buildCalHeader(dates,'prevWeekAdmin','nextWeekAdmin')}<div class="cal-grid">`;
+  html += `<div class="cal-time-col"></div>`;
+  dates.forEach((d,i)=>{
+    const ds=fmtDate(d);
+    html+=`<div class="cal-col-head"><span class="dow">${DOW[i]}</span><span class="dom${ds===today?' today':''}">${d.getDate()}</span></div>`;
+  });
+  HOURS.forEach(h=>{
+    html+=`<div class="cal-time-col"><div class="cal-time">${h}</div></div>`;
+    dates.forEach(d=>{
+      const ds=fmtDate(d), key=`${ds}_${h}`, isCand=team.candidateSlots.includes(key);
+      html+=`<div class="cal-col"><div class="cal-slot${isCand?' candidate':''}" onclick="toggleAdminSlot('${ds}','${h}')"></div></div>`;
+    });
+  });
+  html+=`</div></div>`;
+  document.getElementById('admin-cal').innerHTML=html;
+  document.getElementById('selected-slot-count').textContent=team.candidateSlots.length;
+}
+function prevWeekAdmin(){ state.calWeekOffset--; renderAdminCal(); }
+function nextWeekAdmin(){ state.calWeekOffset++; renderAdminCal(); }
+
+// ═══════════════════════════
+// INTERVIEWER CALENDAR
+// ═══════════════════════════
+function renderIVCal(){
+  const team = getTeam(state.currentTeamId);
+  const dates = weekDates(state.calWeekOffset);
+  const today = fmtDate(new Date());
+  const DOW = ['월','화','수','목','금','토','일'];
+  let html = `<div class="cal-wrap">${buildCalHeader(dates,'prevWeekIV','nextWeekIV')}<div class="cal-grid">`;
+  html+=`<div class="cal-time-col"></div>`;
+  dates.forEach((d,i)=>{
+    const ds=fmtDate(d);
+    html+=`<div class="cal-col-head"><span class="dow">${DOW[i]}</span><span class="dom${ds===today?' today':''}">${d.getDate()}</span></div>`;
+  });
+  HOURS.forEach(h=>{
+    html+=`<div class="cal-time-col"><div class="cal-time">${h}</div></div>`;
+    dates.forEach(d=>{
+      const ds=fmtDate(d), key=`${ds}_${h}`;
+      const isCand = team.candidateSlots.includes(key);
+      const isSel = state.ivSelectedSlots.includes(key);
+      let cls='cal-slot';
+      if(isSel) cls+=' all-available';
+      else if(isCand) cls+=' candidate';
+      const oc = isCand?`onclick="toggleIVSlot('${ds}','${h}')"` : '';
+      html+=`<div class="cal-col"><div class="${cls}" ${oc}></div></div>`;
+    });
+  });
+  html+=`</div></div>`;
+  document.getElementById('iv-cal').innerHTML=html;
+  document.getElementById('iv-selected-count').textContent=state.ivSelectedSlots.length;
+}
+function toggleIVSlot(date, time){
+  const key=`${date}_${time}`, idx=state.ivSelectedSlots.indexOf(key);
+  if(idx===-1) state.ivSelectedSlots.push(key);
+  else state.ivSelectedSlots.splice(idx,1);
+  renderIVCal();
+}
+function prevWeekIV(){ state.calWeekOffset--; renderIVCal(); }
+function nextWeekIV(){ state.calWeekOffset++; renderIVCal(); }
+
+// ═══════════════════════════
+// RESULT
+// ═══════════════════════════
+async function loadResultData(){
+  loading(true, '응답 데이터 불러오는 중...');
+  state.resultAvailability = await loadAvailabilityForTeam(state.currentTeamId);
+  loading(false);
+  renderResultPeople();
+  renderResultCal();
+}
+
+function renderResultPeople(){
+  const team = currentTeam();
+  const map = state.resultAvailability;
+  const list = document.getElementById('result-people-list');
+  if(!team.people.length){
+    list.innerHTML=`<div class="empty"><div class="empty-icon">👥</div><p>등록된 면접관이 없습니다</p></div>`;
+    return;
+  }
+  list.innerHTML = team.people.map((p,i)=>{
+    const count = Object.values(map).filter(names=>names.includes(p)).length;
+    const responded = count>0;
+    return `<div class="person-row">
+      <div class="avatar ${colorClass(i)}">${initials(p)}</div>
+      <div><div class="person-name">${p}</div>
+        <div style="font-size:12px;color:var(--ink3)">${responded?count+'개 슬롯 선택':'아직 미응답'}</div>
+      </div>
+      <span class="pill ${responded?'pill-green':'pill-gray'} person-status">${responded?'완료':'대기'}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderResultCal(){
+  const team = currentTeam();
+  const minCount = parseInt(document.getElementById('min-count').value)||1;
+  const dates = weekDates(state.resultWeekOffset);
+  const today = fmtDate(new Date());
+  const DOW = ['월','화','수','목','금','토','일'];
+  const total = team.people.length;
+  const map = state.resultAvailability;
+
+  let html=`<div class="cal-wrap">${buildCalHeader(dates,'prevWeekResult','nextWeekResult')}<div class="cal-grid">`;
+  html+=`<div class="cal-time-col"></div>`;
+  dates.forEach((d,i)=>{
+    const ds=fmtDate(d);
+    html+=`<div class="cal-col-head"><span class="dow">${DOW[i]}</span><span class="dom${ds===today?' today':''}">${d.getDate()}</span></div>`;
+  });
+  HOURS.forEach(h=>{
+    html+=`<div class="cal-time-col"><div class="cal-time">${h}</div></div>`;
+    dates.forEach(d=>{
+      const ds=fmtDate(d), key=`${ds}_${h}`;
+      const isCand = team.candidateSlots.includes(key);
+      const names = map[key]||[];
+      const cnt = names.length;
+      const isAll = cnt>=total && cnt>0;
+      const isPartial = cnt>=minCount && !isAll;
+      let cls='cal-slot', inner='';
+      if(isCand && cnt>0){
+        if(isAll) cls+=' all-available';
+        else if(isPartial) cls+=' partial';
+        const chipColor = isAll?'yes':'warn';
+        const chips = names.slice(0,3).map(n=>`<div class="slot-name-chip ${chipColor}">${n}</div>`).join('');
+        const more = names.length>3?`<div class="slot-name-chip ${chipColor}">+${names.length-3}</div>`:'';
+        const unavail = team.people.filter(p=>!names.includes(p));
+        const tipLines = [...names.map(n=>'✓ '+n), ...unavail.map(n=>'✗ '+n)].join('<br>');
+        inner=`<div class="slot-names">${chips}${more}</div>
+          <div class="slot-tooltip"><strong>${fmtDisplay(ds)} ${h}</strong><br>${tipLines}</div>`;
+      }
+      html+=`<div class="cal-col"><div class="cal-slot-wrap"><div class="${cls}" style="cursor:default">${inner}</div></div></div>`;
+    });
+  });
+  html+=`</div></div>`;
+  document.getElementById('result-cal').innerHTML=html;
+
+  // Intersection list
+  const good = team.candidateSlots.filter(s=>(map[s]||[]).length>=minCount).sort();
+  const el = document.getElementById('intersection-results');
+  if(!good.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">😅</div><p>조건에 맞는 시간이 없습니다<br><small>최소 인원을 줄이거나 응답을 기다려 주세요</small></p></div>`;
+    return;
+  }
+  el.innerHTML = good.map(s=>{
+    const [date,time]=s.split('_');
+    const names=map[s]||[], cnt=names.length, isAll=cnt>=total;
+    const unavail=team.people.filter(p=>!names.includes(p));
+    return `<div class="result-card" style="border-color:${isAll?'var(--yes)':'var(--warn)'}">
+      <div class="result-time">${time}</div>
+      <div class="result-day">${fmtDisplay(date)}</div>
+      <div class="result-who">
+        ${names.map(p=>`<span class="pill pill-green">✓ ${p}</span>`).join('')}
+        ${unavail.map(p=>`<span class="pill pill-gray">✗ ${p}</span>`).join('')}
+      </div>
+      ${isAll?'<div style="margin-top:8px;font-size:12px;font-weight:600;color:var(--yes)">✓ 전원 가능</div>':''}
+    </div>`;
+  }).join('');
+}
+function prevWeekResult(){ state.resultWeekOffset--; renderResultCal(); }
+function nextWeekResult(){ state.resultWeekOffset++; renderResultCal(); }
+
+// ═══════════════════════════
+// URL HASH ROUTING
+// ═══════════════════════════
+async function handleHash(){
+  const hash = location.hash;
+  if(!hash.startsWith('#iv?')) return;
+  const params = new URLSearchParams(hash.slice(4));
+  const teamId = params.get('team');
+  if(!teamId) return;
+  const team = getTeam(teamId);
+  if(!team) return;
+  switchTab('interviewer');
+  const sel = document.getElementById('iv-team-select');
+  sel.value = teamId;
+  sel.disabled = true;
+  document.getElementById('iv-team-fg').style.display = 'none';
+  const notice = document.getElementById('iv-link-notice');
+  notice.style.display = 'block';
+  notice.textContent = `📎 ${team.name} 링크로 접속했습니다. 이름을 입력하고 가능 시간을 선택해 주세요.`;
+}
+
+// ═══════════════════════════
+// INIT
+// ═══════════════════════════
+(async()=>{
+  await loadTeams();
+  await handleHash();
+})();
+</script>
+</body>
+</html>
