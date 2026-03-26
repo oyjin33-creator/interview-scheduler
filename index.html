@@ -57,31 +57,37 @@ input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26
 .team-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .team-name{font-weight:600;font-size:15px}
 .team-meta{font-size:12px;color:var(--ink3);margin-top:1px}
-.cal-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.cal-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:20px}
 .cal-nav{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--paper2)}
 .cal-nav-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
 .cal-nav-btn{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink2);font-size:16px;transition:all .15s}
 .cal-nav-btn:hover{background:var(--paper3);color:var(--ink)}
 .cal-grid{display:grid;grid-template-columns:56px repeat(7,1fr);border-top:1px solid var(--line)}
-.cal-col-head{padding:10px 4px;text-align:center;font-size:12px;font-weight:600;color:var(--ink2);border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--paper2);display:flex;flex-direction:column;align-items:center;gap:3px}
+.cal-col-head{padding:10px 4px;text-align:center;font-size:12px;font-weight:600;color:var(--ink2);border-right:1px solid var(--line);border-bottom:2px solid var(--line);background:var(--paper2);display:flex;flex-direction:column;align-items:center;gap:3px}
 .cal-col-head:last-child{border-right:none}
 .cal-col-head .dow{text-transform:uppercase;letter-spacing:.5px}
 .cal-col-head .dom{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--ink)}
 .cal-col-head .dom.today{background:var(--accent);color:#fff}
 .cal-time-col{padding:0;background:var(--paper2);border-right:1px solid var(--line)}
-.cal-time{height:52px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-size:11px;color:var(--ink3);font-family:'Roboto Mono',monospace;border-bottom:1px solid var(--line)}
+/* 1시간 단위 굵은 구분선 */
+.cal-time{height:64px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-size:11px;color:var(--ink3);font-family:'Roboto Mono',monospace;border-bottom:2px solid var(--paper3)}
 .cal-time:last-child{border-bottom:none}
 .cal-col{border-right:1px solid var(--line)}
 .cal-col:last-child{border-right:none}
-.cal-slot{height:52px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .1s;position:relative}
+.cal-slot{height:64px;border-bottom:2px solid var(--paper3);cursor:pointer;transition:background .1s;position:relative}
 .cal-slot:last-child{border-bottom:none}
 .cal-slot:hover{background:var(--accent-soft)}
-.cal-slot.candidate{background:var(--accent-soft)}
-.cal-slot.candidate::after{content:'';position:absolute;left:3px;top:3px;bottom:3px;width:3px;background:var(--accent);border-radius:2px}
-.cal-slot.all-available{background:var(--yes-soft)}
-.cal-slot.all-available::after{content:'';position:absolute;left:3px;top:3px;bottom:3px;width:3px;background:var(--yes);border-radius:2px}
-.cal-slot.partial{background:var(--warn-soft)}
-.cal-slot.partial::after{content:'';position:absolute;left:3px;top:3px;bottom:3px;width:3px;background:var(--warn);border-radius:2px}
+/* 후보 슬롯: 파란 배경 + 왼쪽 바 + "선택가능" 텍스트 */
+.cal-slot.candidate{background:#dce8ff;border-bottom:2px solid #c5d8ff}
+.cal-slot.candidate::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent);border-radius:0}
+.cal-slot.candidate::before{content:'클릭하여 선택';position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;color:var(--accent);opacity:.6;white-space:nowrap}
+.cal-slot.all-available{background:var(--yes-soft);border-bottom:2px solid #b8e8cf}
+.cal-slot.all-available::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--yes);border-radius:0}
+.cal-slot.partial{background:var(--warn-soft);border-bottom:2px solid #f5d8a0}
+.cal-slot.partial::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--warn);border-radius:0}
+/* 주 구분선 (2주 보기에서 첫번째 주 마지막 행) */
+.cal-week-sep .cal-time{border-bottom:3px solid var(--line)}
+.cal-week-sep .cal-slot{border-bottom:3px solid var(--line)}
 .slot-names{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:2px 6px 2px 10px;gap:1px;overflow:hidden}
 .slot-name-chip{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
 .slot-name-chip.yes{color:var(--yes)}
@@ -319,6 +325,21 @@ function weekDates(offset){
   mon.setDate(today.getDate() - (dow===0?6:dow-1) + offset*7);
   return Array.from({length:7},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d; });
 }
+// 2주치 날짜 (14일)
+function twoWeekDates(offset){
+  return [...weekDates(offset), ...weekDates(offset+1)];
+}
+// 팀의 후보 슬롯 중 가장 빠른 날짜가 있는 주의 offset 계산
+function firstSlotWeekOffset(team){
+  if(!team.candidateSlots.length) return 0;
+  const dates = team.candidateSlots.map(s=>new Date(s.split('_')[0]+'T00:00:00')).sort((a,b)=>a-b);
+  const earliest = dates[0];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dow = today.getDay();
+  const mon = new Date(today); mon.setDate(today.getDate()-(dow===0?6:dow-1));
+  const diffDays = Math.floor((earliest-mon)/(1000*60*60*24));
+  return Math.floor(diffDays/7);
+}
 function fmtDate(d){ return d.toISOString().slice(0,10); }
 function fmtDisplay(dateStr){
   const d = new Date(dateStr+'T00:00:00');
@@ -456,12 +477,29 @@ function renderWelcomeTeams(){
     <div class="team-row" id="wt-${t.id}" onclick="selectWelcomeTeam('${t.id}')">
       <div class="team-dot" style="background:${t.color}"></div>
       <div><div class="team-name">${t.name}</div><div class="team-meta">면접관 ${t.people.length}명</div></div>
-      <div style="margin-left:auto;color:var(--ink3)" id="wcheck-${t.id}"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <div style="color:var(--ink3);font-size:16px" id="wcheck-${t.id}"></div>
+        <button class="person-del" onclick="deleteTeam(event,'${t.id}','${t.name}')" title="팀 삭제" style="color:#c0392b;opacity:.6">🗑</button>
+      </div>
     </div>`).join('') : '<p style="font-size:13px;color:var(--ink3);margin-bottom:8px">아직 팀이 없습니다</p>';
 
   const sel = document.getElementById('iv-team-select');
   sel.innerHTML = '<option value="">팀을 선택하세요</option>' +
     state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+}
+
+async function deleteTeam(e, teamId, teamName){
+  e.stopPropagation(); // 팀 선택 클릭 방지
+  if(!confirm(`"${teamName}" 팀을 삭제할까요?\n면접관 목록과 모든 응답 데이터가 함께 삭제됩니다.`)) return;
+  loading(true, '팀 삭제 중...');
+  // availability는 cascade로 자동 삭제됨
+  const { error } = await sb.from('teams').delete().eq('id', teamId);
+  loading(false);
+  if(error){ toast('삭제 실패: '+error.message); return; }
+  state.teams = state.teams.filter(t=>t.id!==teamId);
+  if(_selTeam === teamId) _selTeam = null;
+  renderWelcomeTeams();
+  toast(`"${teamName}" 팀이 삭제되었습니다.`);
 }
 
 let _selTeam = null;
@@ -492,7 +530,8 @@ async function enterInterviewer(){
   if(!teamId){ toast('팀을 선택하세요.'); return; }
   state.currentPerson = name;
   state.currentTeamId = teamId;
-  state.calWeekOffset = 0;
+  // 관리자가 선택한 첫 슬롯이 있는 주부터 보여주기
+  state.calWeekOffset = firstSlotWeekOffset(getTeam(teamId));
   loading(true, '데이터 불러오는 중...');
   state.ivSelectedSlots = await loadMySlots(teamId, name);
   loading(false);
@@ -602,68 +641,91 @@ function copyLink(){
 // ═══════════════════════════
 // CALENDAR (shared builder)
 // ═══════════════════════════
-function buildCalHeader(dates, navPrev, navNext){
-  const s=dates[0], e=dates[6];
+function buildCalHeader(offset, navPrev, navNext, label2){
+  const w1 = weekDates(offset), w2 = weekDates(offset+1);
+  const s=w1[0], e=w2[6];
+  const label = `${s.getMonth()+1}월 ${s.getDate()}일 – ${e.getMonth()+1}월 ${e.getDate()}일 (2주)`;
   return `<div class="cal-nav">
     <button class="cal-nav-btn" onclick="${navPrev}()">‹</button>
-    <div class="cal-nav-title">${s.getMonth()+1}월 ${s.getDate()}일 – ${e.getMonth()+1}월 ${e.getDate()}일</div>
+    <div class="cal-nav-title">${label}</div>
     <button class="cal-nav-btn" onclick="${navNext}()">›</button>
   </div>`;
 }
 
-function renderAdminCal(){
-  const team = currentTeam();
-  const dates = weekDates(state.calWeekOffset);
+function buildCalBody(dates, slotFn){
   const today = fmtDate(new Date());
   const DOW = ['월','화','수','목','금','토','일'];
-  let html = `<div class="cal-wrap">${buildCalHeader(dates,'prevWeekAdmin','nextWeekAdmin')}<div class="cal-grid">`;
+  let html = `<div class="cal-grid">`;
+  // 헤더: 빈 시간 컬럼 + 7일
   html += `<div class="cal-time-col"></div>`;
-  dates.forEach((d,i)=>{
+  dates.slice(0,7).forEach((d,i)=>{
     const ds=fmtDate(d);
-    html+=`<div class="cal-col-head"><span class="dow">${DOW[i]}</span><span class="dom${ds===today?' today':''}">${d.getDate()}</span></div>`;
+    html+=`<div class="cal-col-head"><span class="dow">${DOW[i]}</span><span class="dom${ds===today?' today':''}">${d.getDate()}<br><span style="font-size:10px;font-weight:400;color:var(--ink3)">${d.getMonth()+1}/${d.getDate()}</span></span></div>`;
   });
-  HOURS.forEach(h=>{
-    html+=`<div class="cal-time-col"><div class="cal-time">${h}</div></div>`;
-    dates.forEach(d=>{
-      const ds=fmtDate(d), key=`${ds}_${h}`, isCand=team.candidateSlots.includes(key);
-      html+=`<div class="cal-col"><div class="cal-slot${isCand?' candidate':''}" onclick="toggleAdminSlot('${ds}','${h}')"></div></div>`;
+  // 2주치 행 — 주 경계에 굵은 구분선
+  HOURS.forEach((h,hi)=>{
+    const isLastOfWeek1 = (hi === HOURS.length-1); // 첫째 주 마지막 시간
+    html+=`<div class="cal-time-col"><div class="cal-time" style="${isLastOfWeek1?'border-bottom:3px solid var(--line)':''}"><strong>${h}</strong></div></div>`;
+    dates.slice(0,7).forEach(d=>{
+      const ds=fmtDate(d);
+      html+=`<div class="cal-col">${slotFn(ds,h,false)}</div>`;
     });
   });
-  html+=`</div></div>`;
+  html+=`</div>`;
+
+  // 2주차 헤더
+  html+=`<div class="cal-grid" style="border-top:3px solid var(--accent-soft)">`;
+  html+=`<div class="cal-time-col" style="background:var(--paper2)"></div>`;
+  dates.slice(7,14).forEach((d,i)=>{
+    const ds=fmtDate(d);
+    html+=`<div class="cal-col-head"><span class="dow">${DOW[i]}</span><span class="dom${ds===today?' today':''}">${d.getDate()}<br><span style="font-size:10px;font-weight:400;color:var(--ink3)">${d.getMonth()+1}/${d.getDate()}</span></span></div>`;
+  });
+  HOURS.forEach(h=>{
+    html+=`<div class="cal-time-col"><div class="cal-time"><strong>${h}</strong></div></div>`;
+    dates.slice(7,14).forEach(d=>{
+      const ds=fmtDate(d);
+      html+=`<div class="cal-col">${slotFn(ds,h,false)}</div>`;
+    });
+  });
+  html+=`</div>`;
+  return html;
+}
+
+function renderAdminCal(){
+  const team = currentTeam();
+  const dates = twoWeekDates(state.calWeekOffset);
+  let html = `<div class="cal-wrap">`;
+  html += buildCalHeader(state.calWeekOffset,'prevWeekAdmin','nextWeekAdmin');
+  html += buildCalBody(dates, (ds,h)=>{
+    const key=`${ds}_${h}`, isCand=team.candidateSlots.includes(key);
+    return `<div class="cal-slot${isCand?' candidate':''}" onclick="toggleAdminSlot('${ds}','${h}')"></div>`;
+  });
+  html+=`</div>`;
   document.getElementById('admin-cal').innerHTML=html;
   document.getElementById('selected-slot-count').textContent=team.candidateSlots.length;
 }
-function prevWeekAdmin(){ state.calWeekOffset--; renderAdminCal(); }
-function nextWeekAdmin(){ state.calWeekOffset++; renderAdminCal(); }
+function prevWeekAdmin(){ state.calWeekOffset-=2; renderAdminCal(); }
+function nextWeekAdmin(){ state.calWeekOffset+=2; renderAdminCal(); }
 
 // ═══════════════════════════
 // INTERVIEWER CALENDAR
 // ═══════════════════════════
 function renderIVCal(){
   const team = getTeam(state.currentTeamId);
-  const dates = weekDates(state.calWeekOffset);
-  const today = fmtDate(new Date());
-  const DOW = ['월','화','수','목','금','토','일'];
-  let html = `<div class="cal-wrap">${buildCalHeader(dates,'prevWeekIV','nextWeekIV')}<div class="cal-grid">`;
-  html+=`<div class="cal-time-col"></div>`;
-  dates.forEach((d,i)=>{
-    const ds=fmtDate(d);
-    html+=`<div class="cal-col-head"><span class="dow">${DOW[i]}</span><span class="dom${ds===today?' today':''}">${d.getDate()}</span></div>`;
+  const dates = twoWeekDates(state.calWeekOffset);
+  let html = `<div class="cal-wrap">`;
+  html += buildCalHeader(state.calWeekOffset,'prevWeekIV','nextWeekIV');
+  html += buildCalBody(dates, (ds,h)=>{
+    const key=`${ds}_${h}`;
+    const isCand = team.candidateSlots.includes(key);
+    const isSel = state.ivSelectedSlots.includes(key);
+    let cls='cal-slot';
+    if(isSel) cls+=' all-available';
+    else if(isCand) cls+=' candidate';
+    const oc = isCand?`onclick="toggleIVSlot('${ds}','${h}')"` : '';
+    return `<div class="${cls}" ${oc}></div>`;
   });
-  HOURS.forEach(h=>{
-    html+=`<div class="cal-time-col"><div class="cal-time">${h}</div></div>`;
-    dates.forEach(d=>{
-      const ds=fmtDate(d), key=`${ds}_${h}`;
-      const isCand = team.candidateSlots.includes(key);
-      const isSel = state.ivSelectedSlots.includes(key);
-      let cls='cal-slot';
-      if(isSel) cls+=' all-available';
-      else if(isCand) cls+=' candidate';
-      const oc = isCand?`onclick="toggleIVSlot('${ds}','${h}')"` : '';
-      html+=`<div class="cal-col"><div class="${cls}" ${oc}></div></div>`;
-    });
-  });
-  html+=`</div></div>`;
+  html+=`</div>`;
   document.getElementById('iv-cal').innerHTML=html;
   document.getElementById('iv-selected-count').textContent=state.ivSelectedSlots.length;
 }
@@ -673,8 +735,8 @@ function toggleIVSlot(date, time){
   else state.ivSelectedSlots.splice(idx,1);
   renderIVCal();
 }
-function prevWeekIV(){ state.calWeekOffset--; renderIVCal(); }
-function nextWeekIV(){ state.calWeekOffset++; renderIVCal(); }
+function prevWeekIV(){ state.calWeekOffset-=2; renderIVCal(); }
+function nextWeekIV(){ state.calWeekOffset+=2; renderIVCal(); }
 
 // ═══════════════════════════
 // RESULT
@@ -711,46 +773,36 @@ function renderResultPeople(){
 function renderResultCal(){
   const team = currentTeam();
   const minCount = parseInt(document.getElementById('min-count').value)||1;
-  const dates = weekDates(state.resultWeekOffset);
-  const today = fmtDate(new Date());
-  const DOW = ['월','화','수','목','금','토','일'];
+  const dates = twoWeekDates(state.resultWeekOffset);
   const total = team.people.length;
   const map = state.resultAvailability;
 
-  let html=`<div class="cal-wrap">${buildCalHeader(dates,'prevWeekResult','nextWeekResult')}<div class="cal-grid">`;
-  html+=`<div class="cal-time-col"></div>`;
-  dates.forEach((d,i)=>{
-    const ds=fmtDate(d);
-    html+=`<div class="cal-col-head"><span class="dow">${DOW[i]}</span><span class="dom${ds===today?' today':''}">${d.getDate()}</span></div>`;
+  let html=`<div class="cal-wrap">`;
+  html+=buildCalHeader(state.resultWeekOffset,'prevWeekResult','nextWeekResult');
+  html+=buildCalBody(dates,(ds,h)=>{
+    const key=`${ds}_${h}`;
+    const isCand = team.candidateSlots.includes(key);
+    const names = map[key]||[];
+    const cnt = names.length;
+    const isAll = cnt>=total && cnt>0;
+    const isPartial = cnt>=minCount && !isAll;
+    let cls='cal-slot', inner='';
+    if(isCand && cnt>0){
+      if(isAll) cls+=' all-available';
+      else if(isPartial) cls+=' partial';
+      const chipColor = isAll?'yes':'warn';
+      const chips = names.slice(0,3).map(n=>`<div class="slot-name-chip ${chipColor}">${n}</div>`).join('');
+      const more = names.length>3?`<div class="slot-name-chip ${chipColor}">+${names.length-3}</div>`:'';
+      const unavail = team.people.filter(p=>!names.includes(p));
+      const tipLines = [...names.map(n=>'✓ '+n), ...unavail.map(n=>'✗ '+n)].join('<br>');
+      inner=`<div class="slot-names">${chips}${more}</div>
+        <div class="slot-tooltip"><strong>${fmtDisplay(ds)} ${h}</strong><br>${tipLines}</div>`;
+    }
+    return `<div class="cal-slot-wrap"><div class="${cls}" style="cursor:default">${inner}</div></div>`;
   });
-  HOURS.forEach(h=>{
-    html+=`<div class="cal-time-col"><div class="cal-time">${h}</div></div>`;
-    dates.forEach(d=>{
-      const ds=fmtDate(d), key=`${ds}_${h}`;
-      const isCand = team.candidateSlots.includes(key);
-      const names = map[key]||[];
-      const cnt = names.length;
-      const isAll = cnt>=total && cnt>0;
-      const isPartial = cnt>=minCount && !isAll;
-      let cls='cal-slot', inner='';
-      if(isCand && cnt>0){
-        if(isAll) cls+=' all-available';
-        else if(isPartial) cls+=' partial';
-        const chipColor = isAll?'yes':'warn';
-        const chips = names.slice(0,3).map(n=>`<div class="slot-name-chip ${chipColor}">${n}</div>`).join('');
-        const more = names.length>3?`<div class="slot-name-chip ${chipColor}">+${names.length-3}</div>`:'';
-        const unavail = team.people.filter(p=>!names.includes(p));
-        const tipLines = [...names.map(n=>'✓ '+n), ...unavail.map(n=>'✗ '+n)].join('<br>');
-        inner=`<div class="slot-names">${chips}${more}</div>
-          <div class="slot-tooltip"><strong>${fmtDisplay(ds)} ${h}</strong><br>${tipLines}</div>`;
-      }
-      html+=`<div class="cal-col"><div class="cal-slot-wrap"><div class="${cls}" style="cursor:default">${inner}</div></div></div>`;
-    });
-  });
-  html+=`</div></div>`;
+  html+=`</div>`;
   document.getElementById('result-cal').innerHTML=html;
 
-  // Intersection list
   const good = team.candidateSlots.filter(s=>(map[s]||[]).length>=minCount).sort();
   const el = document.getElementById('intersection-results');
   if(!good.length){
@@ -772,8 +824,8 @@ function renderResultCal(){
     </div>`;
   }).join('');
 }
-function prevWeekResult(){ state.resultWeekOffset--; renderResultCal(); }
-function nextWeekResult(){ state.resultWeekOffset++; renderResultCal(); }
+function prevWeekResult(){ state.resultWeekOffset-=2; renderResultCal(); }
+function nextWeekResult(){ state.resultWeekOffset+=2; renderResultCal(); }
 
 // ═══════════════════════════
 // ADMIN PASSWORD
