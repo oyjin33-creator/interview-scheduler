@@ -114,6 +114,42 @@ input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26
 .person-del:hover{background:var(--paper3);color:#c0392b}
 .c0{background:#e8eeff;color:#1a56f0}.c1{background:#e6f7ee;color:#1a9e5c}.c2{background:#fef3e2;color:#d97706}.c3{background:#fdecea;color:#c0392b}.c4{background:#f3f0fe;color:#6c4fd4}.c5{background:#fce8f3;color:#c026a0}.c6{background:#e6f5fb;color:#0891b2}.c7{background:#fdf6e3;color:#92700a}
 @media(max-width:700px){.topbar{padding:0 16px}.body{padding:16px}.cal-col-head .dow{display:none}}
+
+/* ── 모바일 리스트형 UI ── */
+@media(max-width:700px){
+  .desktop-only{display:none!important}
+  .mobile-only{display:block!important}
+}
+@media(min-width:701px){
+  .mobile-only{display:none!important}
+  .desktop-only{display:block!important}
+}
+.date-group{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:12px;overflow:hidden}
+.date-group-header{
+  padding:14px 16px;background:var(--paper2);
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:10px;
+}
+.date-group-dow{
+  width:36px;height:36px;border-radius:8px;
+  background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;flex-shrink:0;
+}
+.date-group-dow.today{background:var(--yes)}
+.date-group-label{font-weight:600;font-size:15px}
+.date-group-sub{font-size:12px;color:var(--ink3);margin-top:1px}
+.time-btn-grid{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px}
+.time-btn{
+  padding:10px 16px;border-radius:8px;
+  font-size:14px;font-weight:600;font-family:inherit;
+  cursor:pointer;border:2px solid var(--line);
+  background:var(--paper);color:var(--ink2);
+  transition:all .12s;flex:1;min-width:80px;text-align:center;
+}
+.time-btn.available{border-color:var(--accent);background:#dce8ff;color:var(--accent)}
+.time-btn.selected{border-color:var(--yes);background:var(--yes-soft);color:var(--yes)}
+.time-btn.disabled{opacity:.3;cursor:default;pointer-events:none}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:9999;transform:translateY(60px);opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.green{background:var(--yes)}
@@ -274,13 +310,23 @@ input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26
   <div class="body">
     <div style="margin-bottom:20px">
       <div class="stitle">가능한 시간 선택</div>
-      <p style="font-size:14px;color:var(--ink2)">파란색으로 표시된 후보 시간 중 참여 가능한 슬롯을 클릭해 선택해 주세요. 중복 선택 가능합니다.</p>
+      <p style="font-size:14px;color:var(--ink2)">참여 가능한 시간을 선택해 주세요. 중복 선택 가능합니다.</p>
     </div>
-    <div class="legend">
-      <div class="leg"><div class="leg-dot" style="background:var(--accent-soft);border-left:3px solid var(--accent)"></div>후보 시간 (클릭으로 선택)</div>
-      <div class="leg"><div class="leg-dot" style="background:var(--yes-soft);border-left:3px solid var(--yes)"></div>내가 선택함</div>
+
+    <!-- 데스크톱: 캘린더 -->
+    <div class="desktop-only">
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#dce8ff;border-left:3px solid var(--accent)"></div>후보 시간 (클릭으로 선택)</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--yes-soft);border-left:3px solid var(--yes)"></div>내가 선택함</div>
+      </div>
+      <div id="iv-cal"></div>
     </div>
-    <div id="iv-cal"></div>
+
+    <!-- 모바일: 리스트형 -->
+    <div class="mobile-only">
+      <div id="iv-list"></div>
+    </div>
+
     <div style="margin-top:16px;font-size:13px;color:var(--ink2)">선택: <strong id="iv-selected-count">0</strong>개 슬롯</div>
   </div>
 </div>
@@ -542,6 +588,7 @@ async function enterInterviewer(){
   const team = getTeam(teamId);
   document.getElementById('iv-topbar-info').textContent = `${team.name} · ${name}`;
   renderIVCal();
+  renderIVList();
 }
 
 function goHome(){
@@ -737,9 +784,64 @@ function toggleIVSlot(date, time){
   if(idx===-1) state.ivSelectedSlots.push(key);
   else state.ivSelectedSlots.splice(idx,1);
   renderIVCal();
+  renderIVList();
 }
 function prevWeekIV(){ state.calWeekOffset-=2; renderIVCal(); }
 function nextWeekIV(){ state.calWeekOffset+=2; renderIVCal(); }
+
+// ── 모바일 리스트형 렌더 ──
+function renderIVList(){
+  const team = getTeam(state.currentTeamId);
+  const el = document.getElementById('iv-list');
+  if(!el) return;
+
+  // 후보 슬롯을 날짜별로 그룹핑
+  const grouped = {};
+  team.candidateSlots.forEach(s=>{
+    const [date, time] = s.split('_');
+    if(!grouped[date]) grouped[date]=[];
+    grouped[date].push(time);
+  });
+
+  const today = fmtDate(new Date());
+  const sortedDates = Object.keys(grouped).sort();
+
+  if(!sortedDates.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><p>관리자가 아직 후보 시간을 선택하지 않았습니다</p></div>`;
+    return;
+  }
+
+  el.innerHTML = sortedDates.map(date=>{
+    const d = new Date(date+'T00:00:00');
+    const dow = ['일','월','화','수','목','금','토'][d.getDay()];
+    const isToday = date===today;
+    const times = grouped[date].sort();
+    const timeBtns = times.map(time=>{
+      const key=`${date}_${time}`;
+      const isSel = state.ivSelectedSlots.includes(key);
+      return `<button class="time-btn ${isSel?'selected':'available'}"
+        onclick="toggleIVSlot('${date}','${time}')">
+        ${time}${isSel?' ✓':''}
+      </button>`;
+    }).join('');
+    return `<div class="date-group">
+      <div class="date-group-header">
+        <div class="date-group-dow${isToday?' today':''}">${dow}</div>
+        <div>
+          <div class="date-group-label">${d.getMonth()+1}월 ${d.getDate()}일</div>
+          <div class="date-group-sub">${isToday?'오늘 · ':''} ${times.length}개 후보 시간</div>
+        </div>
+        <div style="margin-left:auto;font-size:12px;color:var(--yes);font-weight:600">
+          ${times.filter(t=>state.ivSelectedSlots.includes(date+'_'+t)).length > 0
+            ? times.filter(t=>state.ivSelectedSlots.includes(date+'_'+t)).length+'개 선택됨' : ''}
+        </div>
+      </div>
+      <div class="time-btn-grid">${timeBtns}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('iv-selected-count').textContent = state.ivSelectedSlots.length;
+}
 
 // ═══════════════════════════
 // RESULT
