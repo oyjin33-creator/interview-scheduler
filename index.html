@@ -374,9 +374,9 @@ function weekDates(offset){
   mon.setDate(today.getDate() - (dow===0?6:dow-1) + offset*7);
   return Array.from({length:7},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d; });
 }
-// 2주치 날짜 (14일)
-function twoWeekDates(offset){
-  return [...weekDates(offset), ...weekDates(offset+1)];
+// 3주치 날짜 (21일)
+function threeWeekDates(offset){
+  return [...weekDates(offset), ...weekDates(offset+1), ...weekDates(offset+2)];
 }
 // 팀의 후보 슬롯 중 가장 빠른 날짜가 있는 주의 offset 계산
 function firstSlotWeekOffset(team){
@@ -691,10 +691,10 @@ function copyLink(){
 // ═══════════════════════════
 // CALENDAR (shared builder)
 // ═══════════════════════════
-function buildCalHeader(offset, navPrev, navNext, label2){
-  const w1 = weekDates(offset), w2 = weekDates(offset+1);
-  const s=w1[0], e=w2[6];
-  const label = `${s.getMonth()+1}월 ${s.getDate()}일 – ${e.getMonth()+1}월 ${e.getDate()}일 (2주)`;
+function buildCalHeader(offset, navPrev, navNext){
+  const w1 = weekDates(offset), w3 = weekDates(offset+2);
+  const s=w1[0], e=w3[6];
+  const label = `${s.getMonth()+1}월 ${s.getDate()}일 – ${e.getMonth()+1}월 ${e.getDate()}일 (3주)`;
   return `<div class="cal-nav">
     <button class="cal-nav-btn" onclick="${navPrev}()">‹</button>
     <div class="cal-nav-title">${label}</div>
@@ -705,45 +705,34 @@ function buildCalHeader(offset, navPrev, navNext, label2){
 function buildCalBody(dates, slotFn){
   const today = fmtDate(new Date());
   const DOW = ['월','화','수','목','금','토','일'];
-  let html = `<div class="cal-grid">`;
-  // 헤더: 빈 시간 컬럼 + 7일
-  html += `<div class="cal-time-col"></div>`;
-  dates.slice(0,7).forEach((d,i)=>{
-    const ds=fmtDate(d);
-    html+=`<div class="cal-col-head"><span class="dow">${DOW[i]}</span><span class="dom${ds===today?' today':''}">${d.getDate()}<br><span style="font-size:10px;font-weight:400;color:var(--ink3)">${d.getMonth()+1}/${d.getDate()}</span></span></div>`;
-  });
-  // 2주치 행 — 주 경계에 굵은 구분선
-  HOURS.forEach((h,hi)=>{
-    const isLastOfWeek1 = (hi === HOURS.length-1); // 첫째 주 마지막 시간
-    html+=`<div class="cal-time-col"><div class="cal-time" style="${isLastOfWeek1?'border-bottom:3px solid var(--line)':''}"><strong>${h}</strong></div></div>`;
-    dates.slice(0,7).forEach(d=>{
-      const ds=fmtDate(d);
-      html+=`<div class="cal-col">${slotFn(ds,h,false)}</div>`;
-    });
-  });
-  html+=`</div>`;
+  let html = '';
 
-  // 2주차 헤더
-  html+=`<div class="cal-grid" style="border-top:3px solid var(--accent-soft)">`;
-  html+=`<div class="cal-time-col" style="background:var(--paper2)"></div>`;
-  dates.slice(7,14).forEach((d,i)=>{
-    const ds=fmtDate(d);
-    html+=`<div class="cal-col-head"><span class="dow">${DOW[i]}</span><span class="dom${ds===today?' today':''}">${d.getDate()}<br><span style="font-size:10px;font-weight:400;color:var(--ink3)">${d.getMonth()+1}/${d.getDate()}</span></span></div>`;
-  });
-  HOURS.forEach(h=>{
-    html+=`<div class="cal-time-col"><div class="cal-time"><strong>${h}</strong></div></div>`;
-    dates.slice(7,14).forEach(d=>{
+  // 3주 각각 렌더
+  [0, 7, 14].forEach((start, wi)=>{
+    const weekSlice = dates.slice(start, start+7);
+    const borderTop = wi>0 ? 'border-top:3px solid var(--accent-soft)' : '';
+    html+=`<div class="cal-grid" style="${borderTop}">`;
+    html+=`<div class="cal-time-col"></div>`;
+    weekSlice.forEach((d,i)=>{
       const ds=fmtDate(d);
-      html+=`<div class="cal-col">${slotFn(ds,h,false)}</div>`;
+      html+=`<div class="cal-col-head"><span class="dow">${DOW[i]}</span><span class="dom${ds===today?' today':''}">${d.getDate()}<br><span style="font-size:10px;font-weight:400;color:var(--ink3)">${d.getMonth()+1}/${d.getDate()}</span></span></div>`;
     });
+    HOURS.forEach(h=>{
+      html+=`<div class="cal-time-col"><div class="cal-time"><strong>${h}</strong></div></div>`;
+      weekSlice.forEach(d=>{
+        const ds=fmtDate(d);
+        html+=`<div class="cal-col">${slotFn(ds,h)}</div>`;
+      });
+    });
+    html+=`</div>`;
   });
-  html+=`</div>`;
+
   return html;
 }
 
 function renderAdminCal(){
   const team = currentTeam();
-  const dates = twoWeekDates(state.calWeekOffset);
+  const dates = threeWeekDates(state.calWeekOffset);
   let html = `<div class="cal-wrap">`;
   html += buildCalHeader(state.calWeekOffset,'prevWeekAdmin','nextWeekAdmin');
   html += buildCalBody(dates, (ds,h)=>{
@@ -754,15 +743,15 @@ function renderAdminCal(){
   document.getElementById('admin-cal').innerHTML=html;
   document.getElementById('selected-slot-count').textContent=team.candidateSlots.length;
 }
-function prevWeekAdmin(){ state.calWeekOffset-=2; renderAdminCal(); }
-function nextWeekAdmin(){ state.calWeekOffset+=2; renderAdminCal(); }
+function prevWeekAdmin(){ state.calWeekOffset-=1; renderAdminCal(); }
+function nextWeekAdmin(){ state.calWeekOffset+=1; renderAdminCal(); }
 
 // ═══════════════════════════
 // INTERVIEWER CALENDAR
 // ═══════════════════════════
 function renderIVCal(){
   const team = getTeam(state.currentTeamId);
-  const dates = twoWeekDates(state.calWeekOffset);
+  const dates = threeWeekDates(state.calWeekOffset);
   let html = `<div class="cal-wrap">`;
   html += buildCalHeader(state.calWeekOffset,'prevWeekIV','nextWeekIV');
   html += buildCalBody(dates, (ds,h)=>{
@@ -786,8 +775,8 @@ function toggleIVSlot(date, time){
   renderIVCal();
   renderIVList();
 }
-function prevWeekIV(){ state.calWeekOffset-=2; renderIVCal(); }
-function nextWeekIV(){ state.calWeekOffset+=2; renderIVCal(); }
+function prevWeekIV(){ state.calWeekOffset-=1; renderIVCal(); }
+function nextWeekIV(){ state.calWeekOffset+=1; renderIVCal(); }
 
 // ── 모바일 리스트형 렌더 ──
 function renderIVList(){
@@ -878,7 +867,7 @@ function renderResultPeople(){
 function renderResultCal(){
   const team = currentTeam();
   const minCount = parseInt(document.getElementById('min-count').value)||1;
-  const dates = twoWeekDates(state.resultWeekOffset);
+  const dates = threeWeekDates(state.resultWeekOffset);
   const total = team.people.length;
   const map = state.resultAvailability;
 
@@ -929,8 +918,8 @@ function renderResultCal(){
     </div>`;
   }).join('');
 }
-function prevWeekResult(){ state.resultWeekOffset-=2; renderResultCal(); }
-function nextWeekResult(){ state.resultWeekOffset+=2; renderResultCal(); }
+function prevWeekResult(){ state.resultWeekOffset-=1; renderResultCal(); }
+function nextWeekResult(){ state.resultWeekOffset+=1; renderResultCal(); }
 
 // ═══════════════════════════
 // ADMIN PASSWORD
